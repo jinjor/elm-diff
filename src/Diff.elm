@@ -1,6 +1,9 @@
 module Diff exposing (Change(..), diff, diffLines)
 
-{-|
+{-| Compares two list and returns how they have changed.
+Each function uses an [O(ND) algorithm](http://www.xmailserver.org/diff2.pdf) internally,
+where N is sum of the each length of two text and D is the edit distance.
+If large text is replaced with another large text, it is the worst case.
 
 # Types
 @docs Change
@@ -23,7 +26,7 @@ type Change a
 
 {-| Compares two text.
 
-ex. The following texts
+Giving the following text
 
 ```
 a = """aaa
@@ -39,10 +42,10 @@ ddd"""
 results in
 
 ```
-[ Add "zzz"
+[ Added "zzz"
 , NoChange "aaa"
-, Remove "bbb"
-, Add "ccc"
+, Removed "bbb"
+, Added "ccc"
 , NoChange "ddd"
 ]
 ```
@@ -56,8 +59,6 @@ diffLines a b =
 
 
 {-| Compares general lists.
-
-ex.
 
 ```
 diff [1, 3] [2, 3] == [Removed 1, Added 2, NoChange 3] -- True
