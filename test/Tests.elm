@@ -6,17 +6,18 @@ tests : Test
 tests =
   suite "A Test Suite"
     [ test "basic" (assertEqual [] (diff [] []) )
-    , test "basic" (assertEqual [Remove 1] (diff [1] []) )
-    , test "basic" (assertEqual [Add 1] (diff [] [1]) )
+    , test "basic" (assertEqual [Removed 1] (diff [1] []) )
+    , test "basic" (assertEqual [Added 1] (diff [] [1]) )
     , test "basic" (assertEqual [NoChange 1] (diff [1] [1]) )
-    , test "basic" (assertEqual [NoChange 1, Remove 2] (diff [1,2] [1]) )
-    , test "basic" (assertEqual [Remove 1, NoChange 2] (diff [1,2] [2]) )
-    , test "basic" (assertEqual [NoChange 1, Add 2] (diff [1] [1,2]) )
-    , test "basic" (assertEqual [Add 1, NoChange 2] (diff [2] [1,2]) )
+    , test "basic" (assertEqual [NoChange 1, Removed 2] (diff [1,2] [1]) )
+    , test "basic" (assertEqual [Removed 1, NoChange 2] (diff [1,2] [2]) )
+    , test "basic" (assertEqual [NoChange 1, Added 2] (diff [1] [1,2]) )
+    , test "basic" (assertEqual [Added 1, NoChange 2] (diff [2] [1,2]) )
     , test "basic" (assertEqual [NoChange 1, NoChange 2] (diff [1,2] [1,2]) )
-    , test "basic" (assertEqual [Remove 1, Remove 2] (diff [1,2] []) )
-    , test "basic" (assertEqual [Add 1, Add 2] (diff [] [1,2]) )
-    , test "basic" (assertEqual [Remove 1, Add 2] (diff [1] [2]) )
+    , test "basic" (assertEqual [Removed 1, Removed 2] (diff [1,2] []) )
+    , test "basic" (assertEqual [Added 1, Added 2] (diff [] [1,2]) )
+    , test "basic" (assertEqual [Removed 1, Added 2] (diff [1] [2]) )
+    , test "basic" (assertEqual [Removed 1, Added 2, NoChange 3] (diff [1, 3] [2, 3]) )
     ]
 
 main : Program Never

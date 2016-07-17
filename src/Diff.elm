@@ -1,20 +1,69 @@
 module Diff exposing (Change(..), diff, diffLines)
 
+{-|
+
+# Types
+@docs Change
+
+# Diffing
+@docs diff, diffLines
+
+-}
+
+
 import Array exposing (Array)
 import String
 
-
+{-| This describes how each line has changed and also contains its value.
+-}
 type Change a
-  = Add a
+  = Added a
+  | Removed a
   | NoChange a
-  | Remove a
 
+{-| Compares two text.
 
+ex. The following texts
+
+```
+a = """aaa
+bbb
+ddd"""
+
+b = """zzz
+aaa
+ccc
+ddd"""
+```
+
+results in
+
+```
+[ Add "zzz"
+, NoChange "aaa"
+, Remove "bbb"
+, Add "ccc"
+, NoChange "ddd"
+]
+```
+
+.
+
+-}
 diffLines : String -> String -> List (Change String)
 diffLines a b =
   diff (String.lines a) (String.lines b)
 
 
+{-| Compares general lists.
+
+ex.
+
+```
+diff [1, 3] [2, 3] == [Removed 1, Added 2, NoChange 3] -- True
+```
+
+-}
 diff : List a -> List a -> List (Change a)
 diff a b =
   let
@@ -30,12 +79,14 @@ diff a b =
     n =
       Array.length arrB
 
+    -- Elm's Array doesn't allow null element, so we'll use shifted index to access source.
     getA =
       (\x -> Array.get (x - 1) arrA)
 
     getB =
       (\y -> Array.get (y - 1) arrB)
 
+    -- This is used for formatting result. If `ond` is working correctly, illegal accesses never happen.
     getAOrCrash x =
       case getA x of
         Just a -> a
@@ -73,9 +124,9 @@ makeChangesHelp getA getB (x, y) path =
           if x - 1 == prevX && y - 1 == prevY then
             NoChange (getA x)
           else if x == prevX then
-            Add (getB y)
+            Added (getB y)
           else if y == prevY then
-            Remove (getA x)
+            Removed (getA x)
           else
             Debug.crash ("Unexpected path: " ++ toString ((x, y), path))
       in
