@@ -1,9 +1,7 @@
 module Diff exposing (Change(..), diff, diffLines)
 
 {-| Compares two list and returns how they have changed.
-Each function uses an [O(ND) algorithm](http://www.xmailserver.org/diff2.pdf) internally,
-where N is sum of the each length of two text and D is the edit distance.
-If large text is replaced with another large text, it is the worst case.
+Each function internally uses Wu's [O(NP) algorithm](http://myerslab.mpi-cbg.de/wp-content/uploads/2014/06/np_diff.pdf).
 
 # Types
 @docs Change
@@ -105,6 +103,7 @@ diff a b =
         Nothing -> Debug.crash ("Cannot get B[" ++ toString y ++ "]")
 
     path =
+      -- Is there any case ond is needed?
       -- ond getA getB m n
       onp getA getB m n
 
@@ -141,6 +140,7 @@ makeChangesHelp getA getB (x, y) path =
         change :: makeChangesHelp getA getB (prevX, prevY) tail
 
 
+-- Myers's O(ND) algorithm (http://www.xmailserver.org/diff2.pdf)
 ond : (Int -> Maybe a) -> (Int -> Maybe a) -> Int -> Int -> List (Int, Int)
 ond getA getB m n =
   let
@@ -150,28 +150,33 @@ ond getA getB m n =
     ondLoopDK (snake getA getB) m 0 0 v
 
 
-ondLoopDK : (Int -> Int -> List (Int, Int) -> (List (Int, Int), Bool)) -> Int -> Int -> Int -> Array (List (Int, Int)) -> List (Int, Int)
+ondLoopDK : (Int -> Int -> List (Int, Int) -> (List (Int, Int), Bool))
+  -> Int -> Int -> Int -> Array (List (Int, Int)) -> List (Int, Int)
 ondLoopDK snake offset d k v =
   if k > d then
     ondLoopDK snake offset (d + 1) (-d - 1) v
   else
     case step snake offset k v of
-      Found path -> path
+      Found path ->
+        path
       Continue v ->
         ondLoopDK snake offset d (k + 2) v
 
 
+-- Wu's O(NP) algorithm (http://myerslab.mpi-cbg.de/wp-content/uploads/2014/06/np_diff.pdf)
 onp : (Int -> Maybe a) -> (Int -> Maybe a) -> Int -> Int -> List (Int, Int)
 onp getA getB m n =
   let
     v =
       Array.initialize (m + n + 1) (always [])
-    delta = n - m
+    delta =
+      n - m
   in
     onpLoopP (snake getA getB) delta m 0 v
 
 
-onpLoopP : (Int -> Int -> List (Int, Int) -> (List (Int, Int), Bool)) -> Int -> Int -> Int -> Array (List (Int, Int)) -> List (Int, Int)
+onpLoopP : (Int -> Int -> List (Int, Int) -> (List (Int, Int), Bool))
+  -> Int -> Int -> Int -> Array (List (Int, Int)) -> List (Int, Int)
 onpLoopP snake delta offset p v =
   let
     ks =
@@ -187,19 +192,22 @@ onpLoopP snake delta offset p v =
         onpLoopP snake delta offset (p+1) v
 
 
-onpLoopK : (Int -> Int -> List (Int, Int) -> (List (Int, Int), Bool)) -> Int -> List Int -> Array (List (Int, Int)) -> StepResult
+onpLoopK : (Int -> Int -> List (Int, Int) -> (List (Int, Int), Bool))
+  -> Int -> List Int -> Array (List (Int, Int)) -> StepResult
 onpLoopK snake offset ks v =
   case ks of
     [] ->
       Continue v
     k :: ks ->
       case step snake offset k v of
-        Found path -> Found path
+        Found path ->
+          Found path
         Continue v ->
           onpLoopK snake offset ks v
 
 
-step : (Int -> Int -> List (Int, Int) -> (List (Int, Int), Bool)) -> Int -> Int -> Array (List (Int, Int)) -> StepResult
+step : (Int -> Int -> List (Int, Int) -> (List (Int, Int), Bool))
+  -> Int -> Int -> Array (List (Int, Int)) -> StepResult
 step snake offset k v =
   let
     fromLeft =
