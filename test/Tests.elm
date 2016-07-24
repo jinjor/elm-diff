@@ -18,6 +18,7 @@ tests =
     , test "basic" (assertEqual [Added 1, Added 2] (diff [] [1,2]) )
     , test "basic" (assertEqual [Removed 1, Added 2] (diff [1] [2]) )
     , test "basic" (assertEqual [Removed 1, Added 2, NoChange 3] (diff [1, 3] [2, 3]) )
+    , test "basic" (assertEqual [Removed 1, Removed 2, Added 3, Added 4] (diff [1, 2] [3, 4]) )
     ]
 
 main : Program Never
