@@ -23,9 +23,18 @@ tests =
     , test "drop first line" (runManyTimes 100 a d)
     , test "remove line at middle" (runManyTimes 100 a e)
     , test "add line at middle" (runManyTimes 100 a f)
-    , test "modify all" (runManyTimes 1 a g) -- average: 0.55s ( O(ND) = (280*2)*(280*2) )
-    , test "add all" (runManyTimes 1 "" a) -- average: 0.13s ( O(ND) = 280*280 )
-    , test "remove all" (runManyTimes 1 a "") -- average: 0.12s ( O(ND) = 280*280 )
+
+    -- O(ND): 0.63s ( O(ND) = (280*2)*(280*2) )
+    -- O(NP): 0.32s ( O(NP) = (280*2)*((280*2-0)/2) )
+    , test "modify all" (runManyTimes 10 a g)
+
+    -- O(ND): 0.13s ( O(ND) = 280*280 )
+    -- O(NP): 0.0s ( O(NP) = 280*((280-280)/2) )
+    , test "add all" (runManyTimes 10 "" a)
+
+    -- O(ND): 0.13s ( O(ND) = 280*280 )
+    -- O(NP): 0.0s ( O(NP) = 280*((280-280)/2) )
+    , test "remove all" (runManyTimes 10 a "")
     ]
 
 

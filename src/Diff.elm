@@ -1,9 +1,7 @@
 module Diff exposing (Change(..), diff, diffLines)
 
 {-| Compares two list and returns how they have changed.
-Each function uses an [O(ND) algorithm](http://www.xmailserver.org/diff2.pdf) internally,
-where N is sum of the each length of two text and D is the edit distance.
-If large text is replaced with another large text, it is the worst case.
+Each function internally uses Wu's [O(NP) algorithm](http://myerslab.mpi-cbg.de/wp-content/uploads/2014/06/np_diff.pdf).
 
 # Types
 @docs Change
@@ -23,6 +21,12 @@ type Change a
   = Added a
   | Removed a
   | NoChange a
+
+
+type StepResult
+  = Continue (Array (List (Int, Int)))
+  | Found (List (Int, Int))
+
 
 {-| Compares two text.
 
@@ -99,7 +103,9 @@ diff a b =
         Nothing -> Debug.crash ("Cannot get B[" ++ toString y ++ "]")
 
     path =
-      ond getA getB m n
+      -- Is there any case ond is needed?
+      -- ond getA getB m n
+      onp getA getB m n
 
   in
     List.reverse (makeChanges getAOrCrash getBOrCrash path)
@@ -134,55 +140,104 @@ makeChangesHelp getA getB (x, y) path =
         change :: makeChangesHelp getA getB (prevX, prevY) tail
 
 
+-- Myers's O(ND) algorithm (http://www.xmailserver.org/diff2.pdf)
 ond : (Int -> Maybe a) -> (Int -> Maybe a) -> Int -> Int -> List (Int, Int)
 ond getA getB m n =
   let
     v =
       Array.initialize (m + n + 1) (always [])
   in
-    ondHelp (snake getA getB) m 0 0 v
+    ondLoopDK (snake getA getB) m 0 0 v
 
 
-ondHelp : (Int -> Int -> List (Int, Int) -> (List (Int, Int),Bool)) -> Int -> Int -> Int -> Array (List (Int, Int)) -> List (Int, Int)
-ondHelp snake offset d k v =
-  if d >= Array.length v then
-    Debug.crash ("Unexpected index out of bounds: " ++ toString d)
-  else if k > d then
-    ondHelp snake offset (d + 1) (-d - 1) v
+ondLoopDK : (Int -> Int -> List (Int, Int) -> (List (Int, Int), Bool))
+  -> Int -> Int -> Int -> Array (List (Int, Int)) -> List (Int, Int)
+ondLoopDK snake offset d k v =
+  if k > d then
+    ondLoopDK snake offset (d + 1) (-d - 1) v
   else
-    let
-      fromLeft =
-        Maybe.withDefault [] (Array.get (k - 1 + offset) v)
+    case step snake offset k v of
+      Found path ->
+        path
+      Continue v ->
+        ondLoopDK snake offset d (k + 2) v
 
-      fromTop =
-        Maybe.withDefault [] (Array.get (k + 1 + offset) v)
 
-      (path, (x, y)) =
-        case (fromLeft, fromTop) of
-          ([], []) ->
-            ([], (0, 0))
-          ([], (topX, topY) :: _) ->
-            (fromTop, (topX + 1, topY))
-          ((leftX, leftY) :: _, []) ->
-            (fromLeft, (leftX, leftY + 1))
-          ((leftX, leftY) :: _, (topX, topY) :: _) ->
-            -- this implies "remove" comes always earlier than "add"
-            if leftY + 1 >= topY then
-              (fromLeft, (leftX, leftY + 1))
-            else
-              (fromTop, (topX + 1, topY))
+-- Wu's O(NP) algorithm (http://myerslab.mpi-cbg.de/wp-content/uploads/2014/06/np_diff.pdf)
+onp : (Int -> Maybe a) -> (Int -> Maybe a) -> Int -> Int -> List (Int, Int)
+onp getA getB m n =
+  let
+    v =
+      Array.initialize (m + n + 1) (always [])
+    delta =
+      n - m
+  in
+    onpLoopP (snake getA getB) delta m 0 v
 
-      (newPath, goal) =
-        snake (x + 1) (y + 1) ((x, y) :: path)
-    in
-      if goal then
-        newPath
+
+onpLoopP : (Int -> Int -> List (Int, Int) -> (List (Int, Int), Bool))
+  -> Int -> Int -> Int -> Array (List (Int, Int)) -> List (Int, Int)
+onpLoopP snake delta offset p v =
+  let
+    ks =
+      if delta > 0 then
+        List.reverse [(delta+1)..(delta+p)] ++ [(-p)..delta]
       else
-        let
-          newV =
-            Array.set (k + offset) newPath v
-        in
-          ondHelp snake offset d (k + 2) newV
+        List.reverse [(delta+1)..p] ++ [(-p+delta)..delta]
+  in
+    case onpLoopK snake offset ks v of
+      Found path ->
+        path
+      Continue v ->
+        onpLoopP snake delta offset (p+1) v
+
+
+onpLoopK : (Int -> Int -> List (Int, Int) -> (List (Int, Int), Bool))
+  -> Int -> List Int -> Array (List (Int, Int)) -> StepResult
+onpLoopK snake offset ks v =
+  case ks of
+    [] ->
+      Continue v
+    k :: ks ->
+      case step snake offset k v of
+        Found path ->
+          Found path
+        Continue v ->
+          onpLoopK snake offset ks v
+
+
+step : (Int -> Int -> List (Int, Int) -> (List (Int, Int), Bool))
+  -> Int -> Int -> Array (List (Int, Int)) -> StepResult
+step snake offset k v =
+  let
+    fromLeft =
+      Maybe.withDefault [] (Array.get (k - 1 + offset) v)
+
+    fromTop =
+      Maybe.withDefault [] (Array.get (k + 1 + offset) v)
+
+    (path, (x, y)) =
+      case (fromLeft, fromTop) of
+        ([], []) ->
+          ([], (0, 0))
+        ([], (topX, topY) :: _) ->
+          (fromTop, (topX + 1, topY))
+        ((leftX, leftY) :: _, []) ->
+          (fromLeft, (leftX, leftY + 1))
+        ((leftX, leftY) :: _, (topX, topY) :: _) ->
+          -- this implies "remove" comes always earlier than "add"
+          if leftY + 1 >= topY then
+            (fromLeft, (leftX, leftY + 1))
+          else
+            (fromTop, (topX + 1, topY))
+
+    (newPath, goal) =
+      snake (x + 1) (y + 1) ((x, y) :: path)
+  in
+    if goal then
+      Found newPath
+    else
+      Continue (Array.set (k + offset) newPath v)
 
 
 snake : (Int -> Maybe a) -> (Int -> Maybe a) -> Int -> Int -> List (Int, Int) -> (List (Int, Int), Bool)

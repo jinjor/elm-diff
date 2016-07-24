@@ -6,7 +6,7 @@ A diff implementation for Elm.
 
 ## The algorithm
 
-This library implements an [O(ND) algorithm](http://www.xmailserver.org/diff2.pdf), where N is sum of the each length of two text and D is the edit distance.
+This library implements Wu's O(NP) algorithm (http://myerslab.mpi-cbg.de/wp-content/uploads/2014/06/np_diff.pdf). It shares the idea with Myers's O(ND) algorithm (http://www.xmailserver.org/diff2.pdf), but much faster in some cases.
 
 ## LICENSE
 
