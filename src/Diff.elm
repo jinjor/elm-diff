@@ -108,7 +108,7 @@ diff a b =
       onp getA getB m n
 
   in
-    List.reverse (makeChanges getAOrCrash getBOrCrash path)
+    makeChanges getAOrCrash getBOrCrash path
 
 
 makeChanges : (Int -> a) -> (Int -> a) -> List (Int, Int) -> List (Change a)
@@ -117,14 +117,14 @@ makeChanges getA getB path =
     [] ->
       []
     latest :: tail ->
-      makeChangesHelp getA getB latest tail
+      makeChangesHelp [] getA getB latest tail
 
 
-makeChangesHelp : (Int -> a) -> (Int -> a) -> (Int, Int) -> List (Int, Int) -> List (Change a)
-makeChangesHelp getA getB (x, y) path =
+makeChangesHelp : List (Change a) -> (Int -> a) -> (Int -> a) -> (Int, Int) -> List (Int, Int) -> List (Change a)
+makeChangesHelp changes getA getB (x, y) path =
   case path of
     [] ->
-      []
+      changes
     (prevX, prevY) :: tail ->
       let
         change =
@@ -137,7 +137,7 @@ makeChangesHelp getA getB (x, y) path =
           else
             Debug.crash ("Unexpected path: " ++ toString ((x, y), path))
       in
-        change :: makeChangesHelp getA getB (prevX, prevY) tail
+        makeChangesHelp (change :: changes) getA getB (prevX, prevY) tail
 
 
 -- Myers's O(ND) algorithm (http://www.xmailserver.org/diff2.pdf)
