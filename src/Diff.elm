@@ -181,9 +181,9 @@ onpLoopP snake delta offset p v =
   let
     ks =
       if delta > 0 then
-        List.reverse [(delta+1)..(delta+p)] ++ [(-p)..delta]
+        List.reverse (List.range (delta+1) (delta+p)) ++ List.range (-p) delta
       else
-        List.reverse [(delta+1)..p] ++ [(-p+delta)..delta]
+        List.reverse (List.range (delta+1) p) ++ List.range (-p+delta) delta
   in
     case onpLoopK snake offset ks v of
       Found path ->
