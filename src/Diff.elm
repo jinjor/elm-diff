@@ -13,7 +13,7 @@ Each function internally uses Wu's [O(NP) algorithm](http://myerslab.mpi-cbg.de/
 
 
 import Array exposing (Array)
-import String
+
 
 {-| This describes how each line has changed and also contains its value.
 -}
