@@ -2,7 +2,7 @@
     "version": "1.0.3",
     "summary": "A diff implementation for Elm",
     "repository": "https://github.com/jinjor/elm-diff.git",
-    "license": "BSD3",
+    "license": "BSD-3-Clause",
     "source-directories": [
         "src"
     ],

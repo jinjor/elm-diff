@@ -10,4 +10,4 @@ This library implements [Wu's O(NP) algorithm](http://myerslab.mpi-cbg.de/wp-con
 
 ## LICENSE
 
-BSD3
+BSD-3-Clause
