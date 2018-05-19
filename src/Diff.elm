@@ -15,7 +15,7 @@ Each function internally uses Wu's [O(NP) algorithm](http://myerslab.mpi-cbg.de/
 
 -}
 
-import Array.Hamt as Array exposing (Array)
+import Array exposing (Array)
 
 
 {-| This describes how each line has changed and also contains its value.
@@ -95,19 +95,19 @@ diff a b =
         -- If `ond` is working correctly, illegal accesses never happen.
         getAOrCrash x =
             case getA x of
-                Just a ->
-                    a
+                Just a_ ->
+                    a_
 
                 Nothing ->
-                    Debug.crash ("Cannot get A[" ++ toString x ++ "]")
+                    Debug.todo ("Cannot get A[" ++ Debug.toString x ++ "]")
 
         getBOrCrash y =
             case getB y of
-                Just b ->
-                    b
+                Just b_ ->
+                    b_
 
                 Nothing ->
-                    Debug.crash ("Cannot get B[" ++ toString y ++ "]")
+                    Debug.todo ("Cannot get B[" ++ Debug.toString y ++ "]")
 
         path =
             -- Is there any case ond is needed?
@@ -152,8 +152,8 @@ makeChangesHelp changes getA getB ( x, y ) path =
                         Removed (getA x)
 
                     else
-                        Debug.crash
-                            ("Unexpected path: " ++ toString ( ( x, y ), path ))
+                        Debug.todo
+                            ("Unexpected path: " ++ Debug.toString ( ( x, y ), path ))
             in
             makeChangesHelp (change :: changes) getA getB ( prevX, prevY ) tail
 
@@ -178,17 +178,17 @@ ondLoopDK :
     -> Int
     -> Array (List ( Int, Int ))
     -> List ( Int, Int )
-ondLoopDK snake offset d k v =
+ondLoopDK snake_ offset d k v =
     if k > d then
-        ondLoopDK snake offset (d + 1) (-d - 1) v
+        ondLoopDK snake_ offset (d + 1) (-d - 1) v
 
     else
-        case step snake offset k v of
+        case step snake_ offset k v of
             Found path ->
                 path
 
-            Continue v ->
-                ondLoopDK snake offset d (k + 2) v
+            Continue v_ ->
+                ondLoopDK snake_ offset d (k + 2) v_
 
 
 
@@ -214,7 +214,7 @@ onpLoopP :
     -> Int
     -> Array (List ( Int, Int ))
     -> List ( Int, Int )
-onpLoopP snake delta offset p v =
+onpLoopP snake_ delta offset p v =
     let
         ks =
             if delta > 0 then
@@ -225,12 +225,12 @@ onpLoopP snake delta offset p v =
                 List.reverse (List.range (delta + 1) p)
                     ++ List.range (-p + delta) delta
     in
-    case onpLoopK snake offset ks v of
+    case onpLoopK snake_ offset ks v of
         Found path ->
             path
 
-        Continue v ->
-            onpLoopP snake delta offset (p + 1) v
+        Continue v_ ->
+            onpLoopP snake_ delta offset (p + 1) v_
 
 
 onpLoopK :
@@ -239,18 +239,18 @@ onpLoopK :
     -> List Int
     -> Array (List ( Int, Int ))
     -> StepResult
-onpLoopK snake offset ks v =
+onpLoopK snake_ offset ks v =
     case ks of
         [] ->
             Continue v
 
-        k :: ks ->
-            case step snake offset k v of
+        k :: ks_ ->
+            case step snake_ offset k v of
                 Found path ->
                     Found path
 
-                Continue v ->
-                    onpLoopK snake offset ks v
+                Continue v_ ->
+                    onpLoopK snake_ offset ks_ v_
 
 
 step :
@@ -259,7 +259,7 @@ step :
     -> Int
     -> Array (List ( Int, Int ))
     -> StepResult
-step snake offset k v =
+step snake_ offset k v =
     let
         fromLeft =
             Maybe.withDefault [] (Array.get (k - 1 + offset) v)
@@ -287,7 +287,7 @@ step snake offset k v =
                         ( fromTop, ( topX + 1, topY ) )
 
         ( newPath, goal ) =
-            snake (x + 1) (y + 1) (( x, y ) :: path)
+            snake_ (x + 1) (y + 1) (( x, y ) :: path)
     in
     if goal then
         Found newPath
