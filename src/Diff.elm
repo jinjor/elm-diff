@@ -3,10 +3,14 @@ module Diff exposing (Change(..), diff, diffLines)
 {-| Compares two list and returns how they have changed.
 Each function internally uses Wu's [O(NP) algorithm](http://myerslab.mpi-cbg.de/wp-content/uploads/2014/06/np_diff.pdf).
 
+
 # Types
+
 @docs Change
 
+
 # Diffing
+
 @docs diff, diffLines
 
 -}
@@ -31,27 +35,25 @@ type StepResult
 
 Giving the following text
 
-```
-a = """aaa
-bbb
-ddd"""
+    a =
+        """aaa
+    bbb
+    ddd"""
 
-b = """zzz
-aaa
-ccc
-ddd"""
-```
+    b =
+        """zzz
+    aaa
+    ccc
+    ddd"""
 
 results in
 
-```
-[ Added "zzz"
-, NoChange "aaa"
-, Removed "bbb"
-, Added "ccc"
-, NoChange "ddd"
-]
-```
+    [ Added "zzz"
+    , NoChange "aaa"
+    , Removed "bbb"
+    , Added "ccc"
+    , NoChange "ddd"
+    ]
 
 .
 
@@ -63,9 +65,7 @@ diffLines a b =
 
 {-| Compares general lists.
 
-```
-diff [1, 3] [2, 3] == [Removed 1, Added 2, NoChange 3] -- True
-```
+    diff [1, 3] [2, 3] == [Removed 1, Added 2, NoChange 3] -- True
 
 -}
 diff : List a -> List a -> List (Change a)
@@ -83,14 +83,16 @@ diff a b =
         n =
             Array.length arrB
 
-        -- Elm's Array doesn't allow null element, so we'll use shifted index to access source.
+        -- Elm's Array doesn't allow null element,
+        -- so we'll use shifted index to access source.
         getA =
-            (\x -> Array.get (x - 1) arrA)
+            \x -> Array.get (x - 1) arrA
 
         getB =
-            (\y -> Array.get (y - 1) arrB)
+            \y -> Array.get (y - 1) arrB
 
-        -- This is used for formatting result. If `ond` is working correctly, illegal accesses never happen.
+        -- This is used for formatting result.
+        -- If `ond` is working correctly, illegal accesses never happen.
         getAOrCrash x =
             case getA x of
                 Just a ->
@@ -112,7 +114,7 @@ diff a b =
             -- ond getA getB m n
             onp getA getB m n
     in
-        makeChanges getAOrCrash getBOrCrash path
+    makeChanges getAOrCrash getBOrCrash path
 
 
 makeChanges : (Int -> a) -> (Int -> a) -> List ( Int, Int ) -> List (Change a)
@@ -125,7 +127,13 @@ makeChanges getA getB path =
             makeChangesHelp [] getA getB latest tail
 
 
-makeChangesHelp : List (Change a) -> (Int -> a) -> (Int -> a) -> ( Int, Int ) -> List ( Int, Int ) -> List (Change a)
+makeChangesHelp :
+    List (Change a)
+    -> (Int -> a)
+    -> (Int -> a)
+    -> ( Int, Int )
+    -> List ( Int, Int )
+    -> List (Change a)
 makeChangesHelp changes getA getB ( x, y ) path =
     case path of
         [] ->
@@ -136,14 +144,18 @@ makeChangesHelp changes getA getB ( x, y ) path =
                 change =
                     if x - 1 == prevX && y - 1 == prevY then
                         NoChange (getA x)
+
                     else if x == prevX then
                         Added (getB y)
+
                     else if y == prevY then
                         Removed (getA x)
+
                     else
-                        Debug.crash ("Unexpected path: " ++ toString ( ( x, y ), path ))
+                        Debug.crash
+                            ("Unexpected path: " ++ toString ( ( x, y ), path ))
             in
-                makeChangesHelp (change :: changes) getA getB ( prevX, prevY ) tail
+            makeChangesHelp (change :: changes) getA getB ( prevX, prevY ) tail
 
 
 
@@ -156,7 +168,7 @@ ond getA getB m n =
         v =
             Array.initialize (m + n + 1) (always [])
     in
-        ondLoopDK (snake getA getB) m 0 0 v
+    ondLoopDK (snake getA getB) m 0 0 v
 
 
 ondLoopDK :
@@ -169,6 +181,7 @@ ondLoopDK :
 ondLoopDK snake offset d k v =
     if k > d then
         ondLoopDK snake offset (d + 1) (-d - 1) v
+
     else
         case step snake offset k v of
             Found path ->
@@ -191,7 +204,7 @@ onp getA getB m n =
         delta =
             n - m
     in
-        onpLoopP (snake getA getB) delta m 0 v
+    onpLoopP (snake getA getB) delta m 0 v
 
 
 onpLoopP :
@@ -205,16 +218,19 @@ onpLoopP snake delta offset p v =
     let
         ks =
             if delta > 0 then
-                List.reverse (List.range (delta + 1) (delta + p)) ++ List.range (-p) delta
-            else
-                List.reverse (List.range (delta + 1) p) ++ List.range (-p + delta) delta
-    in
-        case onpLoopK snake offset ks v of
-            Found path ->
-                path
+                List.reverse (List.range (delta + 1) (delta + p))
+                    ++ List.range -p delta
 
-            Continue v ->
-                onpLoopP snake delta offset (p + 1) v
+            else
+                List.reverse (List.range (delta + 1) p)
+                    ++ List.range (-p + delta) delta
+    in
+    case onpLoopK snake offset ks v of
+        Found path ->
+            path
+
+        Continue v ->
+            onpLoopP snake delta offset (p + 1) v
 
 
 onpLoopK :
@@ -266,24 +282,38 @@ step snake offset k v =
                     -- this implies "remove" comes always earlier than "add"
                     if leftY + 1 >= topY then
                         ( fromLeft, ( leftX, leftY + 1 ) )
+
                     else
                         ( fromTop, ( topX + 1, topY ) )
 
         ( newPath, goal ) =
             snake (x + 1) (y + 1) (( x, y ) :: path)
     in
-        if goal then
-            Found newPath
-        else
-            Continue (Array.set (k + offset) newPath v)
+    if goal then
+        Found newPath
+
+    else
+        Continue (Array.set (k + offset) newPath v)
 
 
-snake : (Int -> Maybe a) -> (Int -> Maybe a) -> Int -> Int -> List ( Int, Int ) -> ( List ( Int, Int ), Bool )
+snake :
+    (Int -> Maybe a)
+    -> (Int -> Maybe a)
+    -> Int
+    -> Int
+    -> List ( Int, Int )
+    -> ( List ( Int, Int ), Bool )
 snake getA getB nextX nextY path =
     case ( getA nextX, getB nextY ) of
         ( Just a, Just b ) ->
             if a == b then
-                snake getA getB (nextX + 1) (nextY + 1) (( nextX, nextY ) :: path)
+                snake
+                    getA
+                    getB
+                    (nextX + 1)
+                    (nextY + 1)
+                    (( nextX, nextY ) :: path)
+
             else
                 ( path, False )
 
