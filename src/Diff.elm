@@ -31,6 +31,12 @@ type StepResult
     | Found (List ( Int, Int ))
 
 
+type BugReport
+    = CannotGetA Int
+    | CannotGetB Int
+    | UnexpectedPath ( Int, Int ) (List ( Int, Int ))
+
+
 {-| Compares two text.
 
 Giving the following text
@@ -70,6 +76,19 @@ diffLines a b =
 -}
 diff : List a -> List a -> List (Change a)
 diff a b =
+    case testDiff a b of
+        Ok changes ->
+            changes
+
+        Err _ ->
+            []
+
+
+{-| Test the algolithm itself.
+If it returns Err, it should be a bug.
+-}
+testDiff : List a -> List a -> Result BugReport (List (Change a))
+testDiff a b =
     let
         arrA =
             Array.fromList a
@@ -91,37 +110,23 @@ diff a b =
         getB =
             \y -> Array.get (y - 1) arrB
 
-        -- This is used for formatting result.
-        -- If `ond` is working correctly, illegal accesses never happen.
-        getAOrCrash x =
-            case getA x of
-                Just a_ ->
-                    a_
-
-                Nothing ->
-                    Debug.todo ("Cannot get A[" ++ Debug.toString x ++ "]")
-
-        getBOrCrash y =
-            case getB y of
-                Just b_ ->
-                    b_
-
-                Nothing ->
-                    Debug.todo ("Cannot get B[" ++ Debug.toString y ++ "]")
-
         path =
             -- Is there any case ond is needed?
             -- ond getA getB m n
             onp getA getB m n
     in
-    makeChanges getAOrCrash getBOrCrash path
+    makeChanges getA getB path
 
 
-makeChanges : (Int -> a) -> (Int -> a) -> List ( Int, Int ) -> List (Change a)
+makeChanges :
+    (Int -> Maybe a)
+    -> (Int -> Maybe a)
+    -> List ( Int, Int )
+    -> Result BugReport (List (Change a))
 makeChanges getA getB path =
     case path of
         [] ->
-            []
+            Ok []
 
         latest :: tail ->
             makeChangesHelp [] getA getB latest tail
@@ -129,33 +134,51 @@ makeChanges getA getB path =
 
 makeChangesHelp :
     List (Change a)
-    -> (Int -> a)
-    -> (Int -> a)
+    -> (Int -> Maybe a)
+    -> (Int -> Maybe a)
     -> ( Int, Int )
     -> List ( Int, Int )
-    -> List (Change a)
+    -> Result BugReport (List (Change a))
 makeChangesHelp changes getA getB ( x, y ) path =
     case path of
         [] ->
-            changes
+            Ok changes
 
         ( prevX, prevY ) :: tail ->
             let
                 change =
                     if x - 1 == prevX && y - 1 == prevY then
-                        NoChange (getA x)
+                        case getA x of
+                            Just a ->
+                                Ok (NoChange a)
+
+                            Nothing ->
+                                Err (CannotGetA x)
 
                     else if x == prevX then
-                        Added (getB y)
+                        case getB y of
+                            Just b ->
+                                Ok (Added b)
+
+                            Nothing ->
+                                Err (CannotGetB y)
 
                     else if y == prevY then
-                        Removed (getA x)
+                        case getA x of
+                            Just a ->
+                                Ok (Removed a)
+
+                            Nothing ->
+                                Err (CannotGetA x)
 
                     else
-                        Debug.todo
-                            ("Unexpected path: " ++ Debug.toString ( ( x, y ), path ))
+                        Err (UnexpectedPath ( x, y ) path)
             in
-            makeChangesHelp (change :: changes) getA getB ( prevX, prevY ) tail
+            change
+                |> Result.andThen
+                    (\c ->
+                        makeChangesHelp (c :: changes) getA getB ( prevX, prevY ) tail
+                    )
 
 
 
