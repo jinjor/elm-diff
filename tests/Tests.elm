@@ -1,8 +1,8 @@
 module Tests exposing (..)
 
-import Test exposing (..)
-import Expect exposing (Expectation)
 import Diff exposing (..)
+import Expect exposing (Expectation)
+import Test exposing (..)
 
 
 basic : Test
@@ -26,12 +26,12 @@ basic =
 
 
 runManyTimes : Int -> String -> String -> (() -> Expectation)
-runManyTimes times a b =
+runManyTimes times a_ b_ =
     let
         total =
-            List.foldl (\i n -> n + List.length (diffLines a b)) 0 (List.range 1 times)
+            List.foldl (\i n -> n + List.length (diffLines a_ b_)) 0 (List.range 1 times)
     in
-        \_ -> Expect.true "" (total > 0)
+    \_ -> Expect.true "" (total > 0)
 
 
 perf : Test
@@ -43,14 +43,17 @@ perf =
         , test "drop first line" (runManyTimes 100 a d)
         , test "remove line at middle" (runManyTimes 100 a e)
         , test "add line at middle" (runManyTimes 100 a f)
-          -- O(ND): 0.63s ( O(ND) = (280*2)*(280*2) )
-          -- O(NP): 0.32s ( O(NP) = (280*2)*((280*2-0)/2) )
+
+        -- O(ND): 0.63s ( O(ND) = (280*2)*(280*2) )
+        -- O(NP): 0.32s ( O(NP) = (280*2)*((280*2-0)/2) )
         , test "modify all" (runManyTimes 10 a g)
-          -- O(ND): 0.13s ( O(ND) = 280*280 )
-          -- O(NP): 0.0s ( O(NP) = 280*((280-280)/2) )
+
+        -- O(ND): 0.13s ( O(ND) = 280*280 )
+        -- O(NP): 0.0s ( O(NP) = 280*((280-280)/2) )
         , test "add all" (runManyTimes 10 "" a)
-          -- O(ND): 0.13s ( O(ND) = 280*280 )
-          -- O(NP): 0.0s ( O(NP) = 280*((280-280)/2) )
+
+        -- O(ND): 0.13s ( O(ND) = 280*280 )
+        -- O(NP): 0.0s ( O(NP) = 280*((280-280)/2) )
         , test "remove all" (runManyTimes 10 a "")
         ]
 
@@ -79,12 +82,12 @@ g =
     mapEachLine ((++) "_") a
 
 
-mapLines f s =
-    String.join "\n" (f (String.lines s))
+mapLines f_ s =
+    String.join "\n" (f_ (String.lines s))
 
 
-mapEachLine f s =
-    mapLines (List.map f) s
+mapEachLine f_ s =
+    mapLines (List.map f_) s
 
 
 a =
