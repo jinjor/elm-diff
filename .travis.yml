@@ -3,5 +3,6 @@ node_js:
   - "8.9"
 before_script:
   - npm install -g elm
-  - npm install -g elm-test
-script: elm-test --seed 1091375208
+  - npm install -g elm-test@0.19.0-beta5
+script: elm-test --fuzz 100 --seed 287625706785436
+
