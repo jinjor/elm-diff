@@ -174,12 +174,12 @@ makeChangesHelp changes getA getB ( x, y ) path =
                     else
                         Err (UnexpectedPath ( x, y ) path)
             in
-            change
-                |> Result.andThen
-                    (\c ->
-                        makeChangesHelp (c :: changes) getA getB ( prevX, prevY ) tail
-                    )
+            case change of
+                Ok c ->
+                    makeChangesHelp (c :: changes) getA getB ( prevX, prevY ) tail
 
+                Err e ->
+                    Err e
 
 
 -- Myers's O(ND) algorithm (http://www.xmailserver.org/diff2.pdf)
